@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Techcora · ERP Console</title>
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/funnel-sans-400-0.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/funnel-sans-500-1.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/funnel-sans-600-2.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/funnel-sans-700-3.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/orbitron-500-0.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/orbitron-600-1.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/orbitron-700-2.woff2" crossorigin />
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-badge"><img src="/brand/techcora-logo.svg" alt="Techcora" /></span>
+        <div class="brand-text">
+          <span class="brand-name">Techcora</span>
+          <span class="brand-sub">ERP Console</span>
+        </div>
+      </div>
+
+      <nav class="nav" id="nav" hidden>
+        <a href="#/dashboard" data-nav="dashboard">Dashboard</a>
+        <a href="#/invoices" data-nav="invoices">Invoices</a>
+        <a href="#/stock" data-nav="stock">Stock levels</a>
+      </nav>
+
+      <div class="top-actions" id="top-actions" hidden>
+        <button class="search-trigger" id="palette-trigger" type="button" title="Search (Ctrl+K)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.8-3.8"></path></svg>
+          <span>Search</span><span class="kbd">Ctrl K</span>
+        </button>
+        <span class="chip chip-live" id="live-chip" title="Realtime connection state">
+          <span class="dot"></span><span id="live-label">live</span>
+        </span>
+        <span class="chip chip-metrics" id="metrics-chip"
+          title="Measured in this tab since load: longest main-thread task, API round trips, data transferred">
+          task — · — req · — KB
+        </span>
+        <div class="user-chip" id="user-chip">
+          <span class="avatar" id="user-avatar">·</span>
+          <span class="user-meta"><b id="user-name">—</b><span class="muted" id="user-role">—</span></span>
+          <button class="icon-btn" id="logout-btn" type="button" title="Log out">⏻</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="view" class="view" aria-live="polite"></main>
+
+    <footer class="statusbar">
+      <span id="status-text">Ready</span>
+      <span class="status-sep">·</span>
+      <span id="status-meta" class="muted"></span>
+      <span class="spacer"></span>
+      <span id="status-build" class="muted"></span>
+    </footer>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+
+  <div class="palette-backdrop" id="palette" hidden>
+    <div class="palette" role="dialog" aria-label="Search">
+      <div class="palette-head">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.8-3.8"></path></svg>
+        <input id="palette-input" type="text" placeholder="Search invoices and materials…" autocomplete="off" spellcheck="false" />
+        <span class="kbd">Esc</span>
+      </div>
+      <div class="palette-results" id="palette-results"></div>
+      <div class="palette-foot">
+        <span><span class="kbd">↑</span><span class="kbd">↓</span> navigate</span>
+        <span><span class="kbd">↵</span> open</span>
+        <span><span class="kbd">Esc</span> close</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal" hidden></div>
+
+  <button class="demo-fab" id="demo-toggle" type="button" hidden>Demo tools</button>
+  <aside class="demo-panel" id="demo-panel" hidden>
+    <div class="demo-head">
+      <strong>Demo tools</strong>
+      <button class="icon-btn" id="demo-close" type="button" title="Close">✕</button>
+    </div>
+
+    <div class="demo-section">
+      <div class="demo-feed-title">Data</div>
+      <div class="demo-row">
+        <select class="select small" id="fake-size" title="Sample data size">
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+        </select>
+        <button class="btn small" id="demo-fake" type="button">Generate sample data</button>
+      </div>
+      <button class="btn small btn-block" id="demo-load-dataset" type="button">Load masked dataset</button>
+      <button class="btn small btn-block danger" id="demo-wipe" type="button">Wipe all data</button>
+      <div class="demo-out" id="demo-out-data"></div>
+    </div>
+
+    <div class="demo-section">
+      <div class="demo-feed-title">Live scenario</div>
+      <button class="btn small btn-block" id="demo-step1" type="button">1 · Setup material — 12 units, 2 batches</button>
+      <div class="demo-out" id="demo-out1"></div>
+      <button class="btn small btn-block" id="demo-step2" type="button">2 · Colleague sale — 10 units</button>
+      <div class="demo-out" id="demo-out2"></div>
+      <button class="btn small btn-block" id="demo-step3" type="button">3 · Goods receipt — 60 lines</button>
+      <div class="demo-out" id="demo-out3"></div>
+    </div>
+
+    <div class="demo-feed">
+      <div class="demo-feed-title">Events</div>
+      <ul class="feed" data-feed><li class="muted">No activity yet</li></ul>
+    </div>
+  </aside>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

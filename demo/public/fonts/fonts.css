@@ -1,0 +1,8 @@
+/* Techcora ERP demo — local webfonts (SIL Open Font License), fetched from Google Fonts. */
+@font-face{font-family:'Funnel Sans';font-style:normal;font-weight:400;font-display:swap;src:url('./funnel-sans-400-0.woff2') format('woff2');}
+@font-face{font-family:'Funnel Sans';font-style:normal;font-weight:500;font-display:swap;src:url('./funnel-sans-500-1.woff2') format('woff2');}
+@font-face{font-family:'Funnel Sans';font-style:normal;font-weight:600;font-display:swap;src:url('./funnel-sans-600-2.woff2') format('woff2');}
+@font-face{font-family:'Funnel Sans';font-style:normal;font-weight:700;font-display:swap;src:url('./funnel-sans-700-3.woff2') format('woff2');}
+@font-face{font-family:'Orbitron';font-style:normal;font-weight:500;font-display:swap;src:url('./orbitron-500-0.woff2') format('woff2');}
+@font-face{font-family:'Orbitron';font-style:normal;font-weight:600;font-display:swap;src:url('./orbitron-600-1.woff2') format('woff2');}
+@font-face{font-family:'Orbitron';font-style:normal;font-weight:700;font-display:swap;src:url('./orbitron-700-2.woff2') format('woff2');}
