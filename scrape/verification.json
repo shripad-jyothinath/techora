@@ -1,0 +1,139 @@
+{
+  "counts": {
+    "transactions": 7761,
+    "invoices": 2869,
+    "materials": 1346,
+    "stockLevels": 2656,
+    "purchaseOrders": 1053,
+    "purchaseReceipts": 1068,
+    "customers": 203,
+    "vendors": 59,
+    "stockAdjustments": 22,
+    "directDeliveries": 2,
+    "storageLocations": 2,
+    "storage_locations": 1,
+    "units": 20
+  },
+  "lines": {
+    "invoiceLines": 5211,
+    "poLines": 3050,
+    "prLines": 2680
+  },
+  "txnByType": {
+    "purchase": 2503,
+    "adjustment": 18,
+    "sales": 5240
+  },
+  "salesMovementLink": {
+    "salesMovements": 5240,
+    "relatedDocNew": 4637,
+    "pct": "88.5"
+  },
+  "stringQty": {
+    "movements": 3241,
+    "invoiceLines": 3220,
+    "invoiceLineUnitPriceStrings": 493,
+    "movementCostStrings": 514
+  },
+  "stock": {
+    "zeroQtyRows": 1558,
+    "stockRowsWithNonzeroQty": 1098,
+    "distinctMaterialsInStock": 1025,
+    "maxRowsPerMaterial": 137,
+    "materialWithMaxRows": "-OV2W52_N3R6HnwRRaEx",
+    "materialsWithNonzeroStock": 691
+  },
+  "materialKeys": {
+    "totalKeys": 1346,
+    "timestamp13Keys": 1002,
+    "firebasePushKeys": 344
+  },
+  "looseEnds": {
+    "movementsMissingMaterial": 22,
+    "stockRowsMissingMaterial": 0,
+    "vendorsIdDiffersFromKey": 39
+  },
+  "customerDrift": {
+    "missingCust": 0,
+    "driftedAny": 3,
+    "driftedName": 3,
+    "totalInvoices": 2869
+  },
+  "invoiceLines": {
+    "oneLineInvoices": 1863,
+    "oneLinePct": "64.9",
+    "maxLines": 100,
+    "avgLines": "1.82"
+  },
+  "movementSkew": {
+    "maxMovementsPerMaterial": 525,
+    "materialWithMaxMovements": "-OV2mo6EJK1XMroKDZUJ",
+    "medianMovementsPerMaterial": 2,
+    "materialsWithMovements": 963
+  },
+  "users": {
+    "distinctUserIds": [
+      "1",
+      "3",
+      "4",
+      "6",
+      "7",
+      "system"
+    ],
+    "count": 6
+  },
+  "sizesMib": {
+    "total": "11.16",
+    "rawBytes": 11696988,
+    "transactions": "3.33",
+    "invoices": "3.78",
+    "purchaseOrders": "1.31",
+    "purchaseReceipts": "1.21",
+    "stockLevels": "1.10",
+    "materials": "0.35",
+    "customers": "0.05",
+    "vendors": "0.02",
+    "other": "0.01"
+  },
+  "rates": [
+    {
+      "label": "movements",
+      "min": "2025-06-28",
+      "max": "2026-10-05",
+      "months": 15.3,
+      "perMonth": 509
+    },
+    {
+      "label": "invoices",
+      "min": "2025-04-10",
+      "max": "2026-10-05",
+      "months": 17.8,
+      "perMonth": 161
+    },
+    {
+      "label": "purchaseOrders",
+      "min": "2025-07-12",
+      "max": "2026-10-05",
+      "months": 14.8,
+      "perMonth": 71
+    },
+    {
+      "label": "purchaseReceipts",
+      "min": "2025-07-12",
+      "max": "2026-10-01",
+      "months": 14.7,
+      "perMonth": 73
+    }
+  ],
+  "recent": {
+    "receiptsLast6mo": 401,
+    "receiptLinesLast6mo": 913,
+    "movementsLast6mo": 3114
+  },
+  "dashboard": {
+    "invoicesTotal": 2869,
+    "outstandingCount": 2860,
+    "outstandingAmount": "19322749.67",
+    "sumBalance": "19262032.67"
+  }
+}
