@@ -1,0 +1,32 @@
+{
+  "name": "techora-erp-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Techcora 'ERP that freezes' demo — same JSON tree as the vendor export, plus a server-side query engine (indexes, transactions, SSE).",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "transform": "node scripts/transform.js",
+    "reindex": "node scripts/reindex.js",
+    "audit": "node scripts/audit.js",
+    "measure": "node scripts/measure.mjs",
+    "grow10x": "node scripts/grow10x.mjs",
+    "perf": "node scripts/perf-variants.mjs",
+    "doc": "node scripts/build-docx.mjs",
+    "start": "node server.js",
+    "test": "playwright test",
+    "test:api": "playwright test tests/api.auth.spec.js tests/api.invoices.spec.js tests/api.stock.spec.js tests/api.dataset.spec.js",
+    "test:ui": "playwright test tests/ui.auth.spec.js tests/ui.spec.js",
+    "fonts": "node scripts/fetch-fonts.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "docx": "^9.11.0"
+  }
+}
