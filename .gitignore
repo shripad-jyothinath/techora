@@ -1,0 +1,27 @@
+# Confidential dataset — never commit (challenge requirement)
+dataset/
+cora-erp-masked.zip
+*.zip
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Local data / build output
+data/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+.env
+
+# stray installers
+*.exe
+
+# office lock files (Word/Excel owner files)
+~$*
+
+# playwright
+.auth/
+test-results/
+playwright-report/
