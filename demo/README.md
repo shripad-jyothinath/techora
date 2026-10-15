@@ -1,5 +1,7 @@
 # Techcora ERP demo — same JSON tree, an indexed server in front
 
+> New here? Start with the [repository README](../README.md) — a plain-English guide to the app, its user flow and every feature. This file is the technical companion: layout, API, coverage and measurements.
+
 A working prototype for the **“The ERP that freezes”** challenge:
 the browser-tab freeze (~55 s on every invoice edit) is fixed **without
 reshaping the vendor's data**. The JSON tree stays the system of record; a
@@ -42,7 +44,7 @@ running them.
 ## Tests
 
 ```bash
-npm test             # full E2E suite (Playwright, 37 tests, ~45 s)
+npm test             # full E2E suite (Playwright, 39 tests, ~30 s)
 npm run test:api     # API contract only
 npm run test:ui      # browser flows only
 ```
