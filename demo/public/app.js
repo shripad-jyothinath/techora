@@ -53,6 +53,18 @@ const debounce = (fn, ms) => {
   };
 };
 
+/**
+ * UUID v4. crypto.randomUUID() only exists in secure contexts (HTTPS or
+ * localhost); this fallback keeps saves working when the app is served over
+ * plain HTTP, e.g. from a raw IP address.
+ */
+const uuid = () =>
+  typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (c) =>
+        (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
+      );
+
 const toast = (title, body = '', kind = 'ok', ms = 4200) => {
   const host = $('#toasts');
   const node = document.createElement('div');
@@ -1369,7 +1381,7 @@ async function viewEditor(invoiceId = null, preselectMaterial = null, token = ro
         customer_id: draft.customer_id,
         date: draft.date,
         due_date: draft.due_date,
-        request_id: crypto.randomUUID(),
+        request_id: uuid(),
         lines: draft.lines.map((l) => ({
           material_id: l.material_id,
           batch_id: l.batch_id,
