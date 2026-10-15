@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo static frontend: no install step",
+  "buildCommand": "echo static frontend: no build step",
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "http://69.62.81.172:8080/api/:path*"
+    }
+  ]
+}
