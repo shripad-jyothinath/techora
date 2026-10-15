@@ -16,7 +16,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { applySchema, getMeta, openDb, stmt } from './lib/db.js';
-import { broadcast, clientCount, sseHandler } from './lib/events.js';
+import { broadcast, clientCount, getRecentEvents, sseHandler } from './lib/events.js';
 import {
   getDashboard, getInvoice, getMaterialStock, getMovements, listCustomers,
   listInvoices, listStockLevels, searchInvoices, searchMaterials, tableCounts,
@@ -201,6 +201,11 @@ app.get('/api/tree', (req, res) => {
 
 app.get('/api/events', (req, res) => {
   sseHandler(req, res);
+});
+
+/** Recent activity across every client — a fresh tab seeds its feed with this. */
+app.get('/api/activity', (req, res) => {
+  res.json({ events: getRecentEvents(12) });
 });
 
 /* ------------------------------------------------------------------ writes */

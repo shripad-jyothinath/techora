@@ -12,6 +12,13 @@ import { nowIso } from './util.js';
 const clients = new Set();
 let seq = 0;
 
+/**
+ * Recent broadcasts, so a tab that just opened can seed its activity feed with
+ * what happened before it connected — the feed is global, not per-session.
+ */
+const history = [];
+const HISTORY_MAX = 50;
+
 export function sseHandler(req, res) {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -26,7 +33,10 @@ export function sseHandler(req, res) {
 
 export function broadcast(event) {
   seq += 1;
-  const payload = JSON.stringify({ seq, at: nowIso(), ...event });
+  const record = { seq, at: nowIso(), ...event };
+  history.push(record);
+  if (history.length > HISTORY_MAX) history.splice(0, history.length - HISTORY_MAX);
+  const payload = JSON.stringify(record);
   const frame = `event: message\ndata: ${payload}\n\n`;
   for (const res of clients) {
     try {
@@ -36,6 +46,12 @@ export function broadcast(event) {
     }
   }
   return payload;
+}
+
+/** The last `limit` broadcasts, oldest first (drives the global activity feed). */
+export function getRecentEvents(limit = 12) {
+  const n = Math.min(Math.max(Number(limit) || 12, 1), HISTORY_MAX);
+  return history.slice(-n);
 }
 
 export function clientCount() {

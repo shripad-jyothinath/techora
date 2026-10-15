@@ -32,6 +32,7 @@ const fmtQty = (n) => {
   return Number.isInteger(v) ? String(v) : String(Math.round(v * 1000) / 1000);
 };
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const fmtDate = (iso) => {
   if (!iso) return '—';
   const d = new Date(String(iso).length <= 10 ? `${iso}T00:00:00Z` : iso);
@@ -78,6 +79,50 @@ const toast = (title, body = '', kind = 'ok', ms = 4200) => {
     setTimeout(() => node.remove(), 320);
   }, ms);
 };
+
+/**
+ * Hover detail card: one fixed node reused by every [data-tt] element (KPI
+ * cards, chart bars). data-tt holds the popover's inner HTML, built at render
+ * time from real figures — the card stays clean, the exacts are one hover away.
+ */
+const tip = (() => {
+  let el = null;
+  let forEl = null;
+  return {
+    show(target) {
+      if (forEl === target) return;
+      forEl = target;
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'tt';
+        document.body.appendChild(el);
+      }
+      el.innerHTML = `<div class="tt-in">${target.dataset.tt}</div>`;
+      const { width: w, height: h } = el.getBoundingClientRect();
+      const r = target.getBoundingClientRect();
+      let top = r.top - h - 10;
+      if (top < 8) top = r.bottom + 10;
+      const left = Math.min(Math.max(r.left + r.width / 2 - w / 2, 8), window.innerWidth - w - 8);
+      el.style.left = `${Math.round(left)}px`;
+      el.style.top = `${Math.round(top)}px`;
+      el.classList.add('on');
+    },
+    hide() {
+      forEl = null;
+      el?.classList.remove('on');
+    },
+  };
+})();
+
+document.addEventListener('mouseover', (e) => {
+  const t = e.target.closest?.('[data-tt]');
+  if (t) tip.show(t);
+});
+document.addEventListener('mouseout', (e) => {
+  const t = e.target.closest?.('[data-tt]');
+  if (t && !(e.relatedTarget && t.contains(e.relatedTarget))) tip.hide();
+});
+window.addEventListener('scroll', () => tip.hide(), { passive: true, capture: true });
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -234,9 +279,10 @@ function onRealtime(fn) {
 }
 
 function describeEvent(evt) {
+  const by = evt.by ? ` · ${evt.by}` : '';
   if (evt.type === 'stock_changed') return `stock update · ${evt.material_ids?.length ?? 0} item(s) · ${evt.source ?? ''}`;
-  if (evt.type === 'invoice_saved') return `invoice ${evt.invoice_number} saved · ${evt.by ?? ''}`;
-  if (evt.type === 'receipt_posted') return `receipt ${evt.receipt_number} posted · ${evt.material_ids?.length ?? 0} item(s)`;
+  if (evt.type === 'invoice_saved') return `invoice ${evt.invoice_number} saved${by}`;
+  if (evt.type === 'receipt_posted') return `receipt ${evt.receipt_number} posted · ${evt.material_ids?.length ?? 0} item(s)${by}`;
   if (evt.type === 'data_changed') return `data ${evt.mode ?? 'changed'}`;
   return evt.type;
 }
@@ -249,23 +295,50 @@ function renderFeeds() {
   });
 }
 
+/** Global activity list: newest first, deduped by server seq (history seed + live). */
+const feedSeen = new Set();
+function addFeedEvent(evt) {
+  if (typeof evt?.seq !== 'number' || feedSeen.has(evt.seq)) return;
+  feedSeen.add(evt.seq);
+  feedItems.unshift({ time: new Date(evt.at).toLocaleTimeString(), text: describeEvent(evt) });
+  feedItems.splice(8);
+  renderFeeds();
+}
+
+/** Backfill the feed with recent events from every client, not just this tab. */
+async function seedActivity() {
+  try {
+    const out = await rawApi('GET', '/api/activity', undefined, true);
+    (out.events ?? []).forEach(addFeedEvent); // oldest first → newest ends on top
+  } catch {
+    /* the feed simply starts live-only */
+  }
+}
+
 function initSSE() {
   if (sseStarted) return;
   sseStarted = true;
   es = new EventSource('/api/events');
-  es.addEventListener('hello', () => {
+  es.addEventListener('hello', (e) => {
     const reconnected = wasConnected && !sseUp;
     wasConnected = true;
     sseUp = true;
     $('#live-chip').classList.remove('off');
     $('#live-label').textContent = 'live';
-    if (reconnected) router(); // converge after a dropped connection
+    try {
+      // a restarted server starts its seq at 0 again — don't block its events
+      if (JSON.parse(e.data).seq === 0) feedSeen.clear();
+    } catch {
+      /* ignore */
+    }
+    if (reconnected) {
+      router(); // converge after a dropped connection
+      seedActivity(); // and backfill whatever was missed while offline
+    }
   });
   es.addEventListener('message', (e) => {
     const evt = JSON.parse(e.data);
-    feedItems.unshift({ time: new Date(evt.at).toLocaleTimeString(), text: describeEvent(evt) });
-    feedItems.splice(8);
-    renderFeeds();
+    addFeedEvent(evt);
     const chip = $('#live-chip');
     chip.classList.remove('pulse');
     void chip.offsetWidth;
@@ -543,6 +616,7 @@ async function enterApp() {
   $('#demo-toggle').hidden = false;
   updateUserChip();
   initSSE();
+  seedActivity();
   await refreshBuildInfo();
   await router();
 }
@@ -595,8 +669,10 @@ async function viewDashboard(token = routeToken) {
           const h = (b.total / max) * 34;
           const x = 4 + i * (barW * 1.45);
           const y = 42 - h;
+          const label = `${MONTHS_FULL[Number(b.month.slice(5)) - 1]} ${b.month.slice(0, 4)}`;
+          const tipHtml = `<div class='tt-label'>${label}</div><div class='tt-value'>$${fmtMoney(b.total)}</div><div class='tt-sub'>${b.invoices} invoice${b.invoices === 1 ? '' : 's'}</div>`;
           return `
-            <rect class="bar" style="animation-delay:${i * 55}ms" x="${x}" y="${y}" width="${barW}" height="${Math.max(h, 0.6)}" rx="1.2" fill="url(#g)"></rect>
+            <rect class="bar" data-tt="${tipHtml}" style="animation-delay:${i * 55}ms" x="${x}" y="${y}" width="${barW}" height="${Math.max(h, 0.6)}" rx="1.2" fill="url(#g)"></rect>
             <text x="${x + barW / 2}" y="46.6" text-anchor="middle" font-size="2.6" fill="#8d857d">${MONTHS[Number(b.month.slice(5)) - 1]}</text>`;
         })
         .join('')}
@@ -608,7 +684,20 @@ async function viewDashboard(token = routeToken) {
       </defs>
     </svg>`;
 
-  const q = d.dataQuality;
+  const monthLabel = `${MONTHS_FULL[Number(d.month.slice(5)) - 1]} ${d.month.slice(0, 4)}`;
+  const avgSale = d.monthSalesCount ? d.monthSales / d.monthSalesCount : 0;
+  const hoverTip = (label, value, sub) =>
+    `<div class='tt-label'>${label}</div><div class='tt-value'>${value}</div><div class='tt-sub'>${sub}</div>`;
+  const tips = {
+    outstanding: hoverTip('Open balances', `$${fmtMoney(d.outstanding.amount)}`, `${d.outstanding.count} invoices with a balance`),
+    sales: hoverTip(
+      `${monthLabel} · month to date`,
+      `$${fmtMoney(d.monthSales)}`,
+      `${d.monthSalesCount} invoice${d.monthSalesCount === 1 ? '' : 's'}${d.monthSalesCount ? ` · avg $${fmtMoney(avgSale)}` : ''}`
+    ),
+    purchases: hoverTip(`${monthLabel} · goods received`, `$${fmtMoney(d.monthPurchases)}`, 'purchase receipts, month to date'),
+    margin: hoverTip(`${monthLabel} · gross margin`, `$${fmtMoney(d.monthMargin)}`, `COGS $${fmtMoney(d.monthCogs)} · ${d.cogsCoverage}% of lines costed`),
+  };
   view.innerHTML = `
     <div class="page-head">
       <div><h1>Dashboard</h1></div>
@@ -617,24 +706,24 @@ async function viewDashboard(token = routeToken) {
     </div>
 
     <div class="grid grid-stats">
-      <div class="card stat accent">
+      <div class="card stat accent" data-tt="${tips.outstanding}">
         <div class="label">Outstanding</div>
-        <div class="value" id="stat-out" title="$${fmtMoney(d.outstanding.amount)}">$0.00</div>
+        <div class="value" id="stat-out">$0.00</div>
         <div class="note">${d.outstanding.count} invoices with a balance</div>
       </div>
-      <div class="card stat">
+      <div class="card stat" data-tt="${tips.sales}">
         <div class="label">Sales · this month</div>
-        <div class="value" id="stat-sales" title="$${fmtMoney(d.monthSales)}">$0.00</div>
+        <div class="value" id="stat-sales">$0.00</div>
         <div class="note">invoiced total</div>
       </div>
-      <div class="card stat">
+      <div class="card stat" data-tt="${tips.purchases}">
         <div class="label">Purchases · this month</div>
-        <div class="value" id="stat-purchases" title="$${fmtMoney(d.monthPurchases)}">$0.00</div>
+        <div class="value" id="stat-purchases">$0.00</div>
         <div class="note">goods received</div>
       </div>
-      <div class="card stat">
+      <div class="card stat" data-tt="${tips.margin}">
         <div class="label">Gross margin · this month</div>
-        <div class="value" id="stat-margin" title="$${fmtMoney(d.monthMargin)}">$0.00</div>
+        <div class="value" id="stat-margin">$0.00</div>
         <div class="note">COGS $${fmtMoneyCompact(d.monthCogs)} · costed ${d.cogsCoverage}%</div>
       </div>
     </div>
@@ -702,30 +791,13 @@ async function viewDashboard(token = routeToken) {
       </div>
 
       <div class="card">
-        <div class="card-head"><h2>Data quality</h2></div>
-        <div class="list-simple">
-          <div class="item">
-            <div class="main"><div class="cell-title">Invoice references resolvable</div>
-              <div class="sub">${q.invoiceResolvable.toLocaleString()} of ${q.salesMovements.toLocaleString()} sales movements</div></div>
-            <span class="badge ${q.invoiceCoverage > 99 ? 'paid' : 'partial'}">${q.invoiceCoverage}%</span>
-          </div>
-          <div class="item">
-            <div class="main"><div class="cell-title">Batch references resolved</div>
-              <div class="sub">${q.batchResolved.toLocaleString()} of ${q.batchRefs.toLocaleString()} invoice lines</div></div>
-            <span class="badge ${q.batchCoverage > 99 ? 'paid' : 'partial'}">${q.batchCoverage}%</span>
-          </div>
-          <div class="item">
-            <div class="main"><div class="cell-title">Movements with full links</div>
-              <div class="sub">written by this system — invoice and batch ids</div></div>
-            <span class="badge info">${q.fullyLinked.toLocaleString()}</span>
-          </div>
+        <div class="card-head">
+          <h2>Activity</h2>
+          <span class="spacer"></span>
+          <span class="pill-count">all users</span>
         </div>
+        <ul class="feed" data-feed></ul>
       </div>
-    </div>
-
-    <div class="card" style="margin-top:18px">
-      <div class="card-head"><h2>Activity</h2></div>
-      <ul class="feed" data-feed></ul>
     </div>`;
 
   renderFeeds();
@@ -1682,6 +1754,7 @@ async function router() {
     }
   });
   cleanups = [];
+  tip.hide();
   if (!currentUser) {
     await showAuth('login');
     return;

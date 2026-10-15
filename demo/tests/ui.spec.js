@@ -11,12 +11,32 @@ test.beforeAll(async ({ request }) => {
 
 /* -------------------------------------------------------------- dashboard */
 
-test('dashboard shows live KPIs, a chart and the activity feed', async ({ page }) => {
+test('dashboard shows live KPIs, a chart and the activity feed', async ({ page, request }) => {
+  const activity = await (await request.get('/api/activity')).json();
+  expect(activity.events.length).toBeGreaterThan(0); // earlier resets broadcast here
+
   await page.goto('/');
   await expect(page.locator('.grid-stats .stat')).toHaveCount(4);
   await expect(page.locator('#stat-out')).not.toHaveText('$0.00'); // count-up lands
   await expect(page.locator('.chart .bar')).toHaveCount(6);
   await expect(page.locator('#view .card .feed[data-feed]')).toBeVisible();
+  // global feed: seeded from server history, so it is not empty on a fresh tab
+  await expect(page.locator('#view .feed[data-feed] li').first()).not.toHaveText('No activity yet');
+});
+
+test('dashboard: hovering a KPI card and a chart bar reveals the exact figures', async ({ page, request }) => {
+  const d = await (await request.get('/api/dashboard')).json();
+  const money = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  await page.goto('/');
+  await page.locator('.grid-stats .stat', { has: page.locator('#stat-sales') }).hover();
+  const tt = page.locator('.tt.on');
+  await expect(tt).toBeVisible();
+  await expect(tt.locator('.tt-value')).toHaveText(`$${money.format(d.monthSales)}`);
+  await expect(tt.locator('.tt-sub')).toContainText(`${d.monthSalesCount} invoice`);
+
+  await page.locator('.chart .bar').last().hover();
+  await expect(page.locator('.tt.on .tt-value')).toHaveText(`$${money.format(d.salesByMonth[5].total)}`);
 });
 
 /* ----------------------------------------------------------- invoice list */

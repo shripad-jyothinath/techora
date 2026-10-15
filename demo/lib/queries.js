@@ -221,7 +221,9 @@ export function getDashboard(db, ref = new Date()) {
        WHERE balance > 0.005 AND status NOT IN ('draft', 'cancelled')`
     )
     .get();
-  const sales = db.prepare('SELECT COALESCE(SUM(total),0) AS v FROM idx_invoice WHERE date >= ? AND date < ?').get(monthStart, nextMonth);
+  const sales = db
+    .prepare('SELECT COALESCE(SUM(total),0) AS v, COUNT(*) AS n FROM idx_invoice WHERE date >= ? AND date < ?')
+    .get(monthStart, nextMonth);
   const purchases = db
     .prepare("SELECT COALESCE(SUM(total_cost),0) AS v FROM idx_movement WHERE type = 'purchase' AND date >= ? AND date < ?")
     .get(monthStart, nextMonth);
@@ -292,9 +294,9 @@ export function getDashboard(db, ref = new Date()) {
   }
   const byMonth = {};
   for (const r of db
-    .prepare("SELECT substr(date,1,7) AS ym, COALESCE(SUM(total),0) AS v FROM idx_invoice WHERE date >= ? GROUP BY ym")
+    .prepare("SELECT substr(date,1,7) AS ym, COALESCE(SUM(total),0) AS v, COUNT(*) AS n FROM idx_invoice WHERE date >= ? GROUP BY ym")
     .all(months[0])) {
-    byMonth[r.ym] = r.v;
+    byMonth[r.ym] = r;
   }
 
   const quality = db
@@ -312,13 +314,18 @@ export function getDashboard(db, ref = new Date()) {
     month: monthStart.slice(0, 7),
     outstanding: { count: outstanding.count, amount: Math.round(outstanding.amount * 100) / 100 },
     monthSales: Math.round(sales.v * 100) / 100,
+    monthSalesCount: sales.n,
     monthPurchases: Math.round(purchases.v * 100) / 100,
     monthCogs: Math.round(costed.cogs * 100) / 100,
     monthMargin: Math.round((sales.v - costed.cogs) * 100) / 100,
     cogsCoverage: allLines ? Math.round((costed.costed_lines / allLines) * 1000) / 10 : 100,
     lowStock: { count: lowStockCount, outOfStock: outOfStockCount, list: lowStock },
     awaitingDelivery: { count: awaiting.count, amount: Math.round(awaiting.amount * 100) / 100, list: awaitingList },
-    salesByMonth: months.map((m) => ({ month: m, total: Math.round((byMonth[m] ?? 0) * 100) / 100 })),
+    salesByMonth: months.map((m) => ({
+      month: m,
+      total: Math.round((byMonth[m]?.v ?? 0) * 100) / 100,
+      invoices: byMonth[m]?.n ?? 0,
+    })),
     dataQuality: {
       salesMovements: quality.salesTotal,
       invoiceResolvable: quality.salesResolvable,
